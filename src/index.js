@@ -1,5 +1,5 @@
 import { DEFAULT_SITE, normalizeSite } from './defaults.js';
-import { renderPage, renderMessage } from './page.js';
+import { renderPage, renderMessage, renderSetup } from './page.js';
 import { renderAdmin, renderLogin } from './admin.js';
 
 const SITE_KEY = 'site';
@@ -92,15 +92,10 @@ async function handleHome(request, env) {
 async function handleAdmin(request, env) {
   const authed = await isAuthed(request, env);
   if (!env.ADMIN_PASSWORD) {
-    return new Response(
-      renderMessage({
-        title: '后台未启用',
-        message:
-          '还没有设置管理密码。请执行 <code>npx wrangler secret put ADMIN_PASSWORD</code>（本地开发写在 .dev.vars 里），然后重新打开本页。',
-        link: '/',
-      }),
-      { status: 403, headers: htmlHeaders() }
-    );
+    const url = new URL(request.url);
+    const host = url.hostname;
+    const workerName = host.endsWith('.workers.dev') ? host.split('.')[0] : '';
+    return new Response(renderSetup({ workerName, host }), { status: 503, headers: htmlHeaders() });
   }
   if (!authed) return new Response(renderLogin({ weak: env.ADMIN_PASSWORD === 'nav-admin' }), { headers: htmlHeaders() });
 

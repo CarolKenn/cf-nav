@@ -3,3 +3,4 @@ node_modules/
 .wrangler/
 preview.html
 preview-admin.html
+preview-setup.html

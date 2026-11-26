@@ -362,3 +362,88 @@ h1{margin:0 0 10px;font-size:20px}p{margin:0;color:rgba(255,255,255,.66);font-si
 a{display:inline-block;margin-top:18px;color:#9ec1ff;font-size:13px}</style></head>
 <body><div class="box"><h1>${esc(title)}</h1><p>${message}</p>${link ? `<a href="${esc(link)}">返回首页</a>` : ''}</div></body></html>`;
 }
+
+/* 没有配置 ADMIN_PASSWORD 时的引导页：直接给出可照着点的步骤，而不是只丢一条命令 */
+export function renderSetup({ workerName = '', host = '', hasDefaultPwd = false } = {}) {
+  const name = workerName || 'cf-nav';
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>还需一步 · 设置后台密码</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:28px 18px;color:#fff;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+-webkit-font-smoothing:antialiased;
+background:radial-gradient(64% 60% at 8% 100%,#ff2d95 0%,transparent 58%),
+radial-gradient(50% 50% at 88% 92%,#ff77d0 0%,transparent 62%),
+radial-gradient(60% 50% at 50% -10%,rgba(84,116,255,.34) 0%,transparent 60%),
+linear-gradient(158deg,#111c46,#060916 55%,#2b0f3c)}
+.card{width:100%;max-width:620px;padding:30px 28px;border-radius:18px;
+background:rgba(10,12,28,.5);border:1px solid rgba(255,255,255,.12);
+-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.04em;
+padding:4px 10px;border-radius:999px;background:rgba(255,196,0,.14);border:1px solid rgba(255,196,0,.3);color:#ffd990}
+h1{margin:14px 0 8px;font-size:21px;letter-spacing:-.01em}
+.lead{margin:0;font-size:13px;line-height:1.75;color:rgba(255,255,255,.62)}
+.lead code{background:rgba(255,255,255,.1);padding:1px 6px;border-radius:5px;font-size:12px}
+ol{list-style:none;margin:20px 0 0;padding:0;counter-reset:s}
+ol li{position:relative;padding:0 0 16px 34px;font-size:13px;line-height:1.7;counter-increment:s}
+ol li::before{content:counter(s);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:7px;
+display:grid;place-items:center;font-size:11px;font-weight:700;
+background:linear-gradient(135deg,#4f7dff,#ff5fb4);color:#fff}
+ol li b{display:block;font-size:13px;font-weight:600}
+ol li span{display:block;margin-top:2px;color:rgba(255,255,255,.55);font-size:12px}
+ol li code{background:rgba(255,255,255,.1);padding:1px 6px;border-radius:5px;font-size:11.5px;
+font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe0ff}
+.note{margin:4px 0 0;padding:10px 12px;border-radius:10px;font-size:11.5px;line-height:1.7;
+background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.55)}
+.note b{color:rgba(255,255,255,.82);font-weight:600}
+details{margin-top:14px;font-size:12.5px;color:rgba(255,255,255,.6)}
+summary{cursor:pointer;color:#9ec1ff;outline:0}
+pre{margin:10px 0 0;padding:10px 12px;border-radius:9px;background:rgba(0,0,0,.32);
+border:1px solid rgba(255,255,255,.1);overflow-x:auto;font-size:12px;color:#cfe0ff;
+font-family:ui-monospace,Menlo,Consolas,monospace}
+.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border-radius:9px;
+font-size:12.5px;text-decoration:none;border:1px solid rgba(255,255,255,.16);
+background:rgba(255,255,255,.07);color:#fff;transition:.16s}
+.btn:hover{background:rgba(255,255,255,.15)}
+.btn.primary{background:linear-gradient(135deg,#4f7dff,#ff5fb4);border-color:transparent;font-weight:600;
+box-shadow:0 8px 22px rgba(90,110,255,.32)}
+.btn.primary:hover{filter:brightness(1.08)}
+.host{margin-top:16px;font-size:11px;color:rgba(255,255,255,.32);word-break:break-all}
+</style></head>
+<body>
+<div class="card">
+  <span class="badge">● 只差最后一步</span>
+  <h1>给 Worker 设一个后台密码</h1>
+  <p class="lead">站点已经跑起来了。后台需要 <code>ADMIN_PASSWORD</code> 这个 Secret 才能登录，
+  而现在 Worker 里读不到它 —— 通常是部署时那一栏留空了。设好之后本页即可正常登录。</p>
+
+  <ol>
+    <li><b>打开 Cloudflare 面板</b><span>Workers &amp; Pages → 点你的 Worker：<code>${esc(name)}</code></span></li>
+    <li><b>进 Settings → Variables and Secrets</b><span>中文界面叫「设置 → 变量和密钥」，位置在 Worker 详情页顶部</span></li>
+    <li><b>点 Add 新增一条</b><span>Type 选 <code>Secret</code>，Name 填 <code>ADMIN_PASSWORD</code>，Value 填你想用的密码，保存</span></li>
+    <li><b>回到本页刷新</b><span>保存会自动生成新版本，等 5~10 秒后重新打开 <code>/admin</code> 就能登录了</span></li>
+  </ol>
+
+  <p class="note"><b>别填错地方：</b>Workers Builds 里的「构建变量（Build variables）」只在构建阶段可见，
+  Worker 运行时读不到，填在那里仍然会看到这个页面。要加在 Worker 自己的 Variables and Secrets 里。</p>
+
+  <details>
+    <summary>或者用命令行（已装 Node 的话）</summary>
+    <pre>cd cf-nav
+npx wrangler secret put ADMIN_PASSWORD
+# 回车后粘贴密码，看到 Success 即生效</pre>
+  </details>
+
+  <div class="acts">
+    <a class="btn primary" href="/admin">重新打开后台</a>
+    <a class="btn" href="https://dash.cloudflare.com/" target="_blank" rel="noopener">打开 Cloudflare 面板</a>
+    <a class="btn" href="/">返回首页</a>
+  </div>
+  ${host ? `<div class="host">当前地址：${esc(host)}</div>` : ''}
+</div>
+</body></html>`;
+}
