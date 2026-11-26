@@ -79,6 +79,7 @@ async function handleHome(request, env) {
 
   const html = renderPage({
     site,
+    canEdit: await isAuthed(request, env),
     stats: {
       pv: Number(stats.pv || 0),
       colo: request.cf?.colo || 'CF',
@@ -149,6 +150,69 @@ async function handleApi(request, env, url, ctx) {
     }
   }
 
+  /* 前台直接增删改：单条应用的 CRUD（需登录 Cookie） */
+  if (path === '/api/admin/apps' || path.startsWith('/api/admin/apps/')) {
+    if (!(await isAuthed(request, env))) return json({ ok: false, error: '未登录或登录已过期' }, 401);
+    if (!env.NAV) return json({ ok: false, error: '未绑定 KV：请配置 [[kv_namespaces]] 并创建 NAV' }, 500);
+
+    if (path === '/api/admin/apps' && method === 'POST') {
+      const body = await readJson(request);
+      const name = String(body.name || '').trim().slice(0, 40);
+      if (!name) return json({ ok: false, error: '名称不能为空' }, 400);
+      try {
+        const site = await mutateSite(env, (cur) => {
+          if (cur.apps.length >= 300) throw new Error('应用数量上限 300');
+          const app = {
+            id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            name,
+            url: cleanUrl(body.url),
+            icon: String(body.icon || '').trim().slice(0, 200),
+            color: cleanColor(body.color),
+            group: String(body.group || '').trim().slice(0, 24) || '其他',
+            desc: String(body.desc || '').trim().slice(0, 60),
+          };
+          if (!cur.groupOrder.includes(app.group)) cur.groupOrder.push(app.group);
+          cur.apps.push(app);
+          return cur;
+        });
+        return json({ ok: true, site });
+      } catch (err) {
+        return json({ ok: false, error: err.message }, 400);
+      }
+    }
+
+    const matched = path.match(/^\/api\/admin\/apps\/([^/]+)$/);
+    if (matched && (method === 'PATCH' || method === 'PUT' || method === 'DELETE')) {
+      const id = decodeURIComponent(matched[1]);
+      const body = method === 'DELETE' ? {} : await readJson(request);
+      try {
+        const site = await mutateSite(env, (cur) => {
+          const i = cur.apps.findIndex((a) => a.id === id);
+          if (i < 0) throw new Error('没有找到这个应用，可能已被删除');
+          if (method === 'DELETE') {
+            cur.apps.splice(i, 1);
+            return cur;
+          }
+          const a = cur.apps[i];
+          if (body.name !== undefined) a.name = String(body.name).trim().slice(0, 40) || a.name;
+          if (body.url !== undefined) a.url = cleanUrl(body.url);
+          if (body.icon !== undefined) a.icon = String(body.icon).trim().slice(0, 200);
+          if (body.color !== undefined) a.color = cleanColor(body.color, a.color);
+          if (body.desc !== undefined) a.desc = String(body.desc).trim().slice(0, 60);
+          if (body.group !== undefined) {
+            a.group = String(body.group).trim().slice(0, 24) || '其他';
+            if (!cur.groupOrder.includes(a.group)) cur.groupOrder.push(a.group);
+          }
+          return cur;
+        });
+        return json({ ok: true, site });
+      } catch (err) {
+        const missing = /没有找到/.test(err.message);
+        return json({ ok: false, error: err.message }, missing ? 404 : 400);
+      }
+    }
+  }
+
   if (path === '/api/hit' && method === 'POST') {
     if (!env.NAV) return json({ ok: true, skipped: true });
     const body = await readJson(request);
@@ -171,6 +235,29 @@ async function loadSite(env) {
   } catch {
     return DEFAULT_SITE;
   }
+}
+
+/* 读-改-写：改完立即落 KV，注意必须深拷贝，loadSite 可能返回共享的 DEFAULT_SITE */
+async function mutateSite(env, fn) {
+  if (!env.NAV) throw new Error('未绑定 KV');
+  const current = JSON.parse(JSON.stringify(await loadSite(env)));
+  const next = fn(current) || current;
+  const site = normalizeSite(next);
+  await env.NAV.put(SITE_KEY, JSON.stringify(site));
+  return site;
+}
+
+/* 用户直接在卡片上填 github.com 这类简写，补上协议 */
+function cleanUrl(u) {
+  const s = String(u || '').trim().slice(0, 500);
+  if (!s) return '#';
+  if (/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(s)) return s;
+  return 'https://' + s;
+}
+
+function cleanColor(c, fallback = '#3b82f6') {
+  const s = String(c || '').trim();
+  return /^#[0-9a-f]{3,8}$/i.test(s) ? s : fallback;
 }
 
 async function bumpStats(env, appId) {

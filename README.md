@@ -1,7 +1,8 @@
 # cf-nav · Cloudflare Worker 网址导航
 
-一个 Sun-Panel 风格的导航首页：渐变光斑背景、实时时钟、搜索过滤、指标卡片、图标宫格，外加一个密码保护的后台。
+一个 Sun-Panel 风格的导航首页：渐变光斑背景、实时时钟、搜索过滤、指标卡片、**小正方形图标宫格**，外加一个密码保护的后台。
 **代码跑在 Cloudflare Workers，数据存在 Cloudflare KV**，没有服务器、没有数据库、没有构建步骤。
+登录后可以**直接在首页改卡片**（新增 / 修改 / 删除），不用每次进后台。
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/CarolKenn/cf-nav)
 
@@ -31,13 +32,33 @@
 
 | 想改什么 | 怎么做 | 是否需要重新部署 |
 | --- | --- | --- |
-| 站点标题、配色、页脚、应用增删改 | 打开 `/admin` 后台改，点保存 | 不需要，存 KV 即时生效 |
+| 新增 / 修改 / 删除某个网址 | 首页右下角 **✎** 进入编辑模式，点卡片直接改 | 不需要，存 KV 即时生效 |
+| 站点标题、配色、页脚、批量排序 | 打开 `/admin` 后台改，点保存 | 不需要，存 KV 即时生效 |
 | 页面样式、交互、接口逻辑 | 在 GitHub 网页上直接编辑 `src/*.js` 并提交 | 自动部署，约 1 分钟 |
 | 本地改完再提交 | `git clone` → 改 → `git commit && git push` | 自动部署 |
 
 改了前端代码后想先在本地看效果：`npm run preview` 生成 `preview.html`，双击打开即可（不用起服务）。
 
-## 三、手动部署（命令行，可选）
+## 三、在首页直接改卡片
+
+登录过 `/admin` 之后，首页右下角会多一个 **✎** 按钮：
+
+1. 点 ✎ 进入编辑模式（顶部出现蓝色提示条）
+2. **改**：点任意卡片，弹窗里改名称 / 网址 / 分组 / 图标 / 底色 / 描述，`Enter` 或「保存」立即写入 KV
+3. **加**：每组末尾的虚线「＋ 新增」卡片，或提示条上的「＋ 新增」。分组填个新名字就是新分组
+4. **删**：卡片右上角的 `×`，或弹窗里的「删除」
+
+细节：
+
+- 保存即刻生效，没有「保存全部」这一步，也不会有未保存的改动丢失
+- 网址支持简写，填 `github.com` 会自动补成 `https://github.com`
+- 图标可填 emoji（🚀）、首字母（G）或图片地址（`https://…/logo.png`）
+- 编辑入口按登录态显示：没登录时点 ✎ 会跳到登录页；编辑接口本身也要 Cookie，未登录直接 401
+- `Esc` 退出编辑模式 / 关闭弹窗；`/` 仍然是聚焦搜索
+
+> 编辑模式是给「自己用」的场景设计的：登录用的 Cookie 就是后台那一份，7 天有效。别把浏览器会话借给别人。
+
+## 四、手动部署（命令行，可选）
 
 ```bash
 git clone https://github.com/CarolKenn/cf-nav && cd cf-nav
@@ -53,7 +74,7 @@ npm run deploy
 
 需要把这些命令压缩成一行：`npm i && npx wrangler secret put ADMIN_PASSWORD && npm run deploy`。
 
-## 四、本地开发
+## 五、本地开发
 
 ```bash
 cp .dev.vars.example .dev.vars   # 里面写 ADMIN_PASSWORD=你的密码
@@ -66,7 +87,7 @@ npm run dev                      # http://localhost:8787（wrangler 模拟真 KV
 npm run mock                     # http://localhost:8788
 ```
 
-## 五、数据结构
+## 六、数据结构
 
 KV 里只有两个键：
 
@@ -109,7 +130,7 @@ KV 里只有两个键：
 npx wrangler kv key put --binding=NAV site --path=./site.json
 ```
 
-## 六、接口
+## 七、接口
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -119,19 +140,24 @@ npx wrangler kv key put --binding=NAV site --path=./site.json
 | POST | `/api/login` | `{password}` → 下发 HttpOnly 会话 Cookie（7 天） |
 | POST | `/api/logout` | 清除会话 |
 | GET/PUT | `/api/admin/site` | 读取 / 整体保存站点（需登录） |
+| POST | `/api/admin/apps` | 新增一条应用（需登录），body 同下面的字段 |
+| PATCH | `/api/admin/apps/:id` | 改一条应用的部分字段（需登录） |
+| DELETE | `/api/admin/apps/:id` | 删一条应用（需登录） |
 | POST | `/api/hit` | `{id}` 记录点击；`{id:null}` 计一次 PV |
 | GET | `/healthz` | 健康检查，返回边缘节点 colo |
 
-## 七、实现要点
+## 八、实现要点
 
 - **零构建**：CSS/JS 以字符串内联在 `page.js` / `admin.js` 里，`wrangler deploy` 只打一个 ESM 入口，不用 Vite / webpack。
-- **无框架**：前台约 200 行原生 JS，负责时钟、搜索（名称/描述/分组/网址全匹配，`/` 聚焦，`Esc` 清空，`Enter` 打开第一个结果）、主题切换、点击上报（`sendBeacon`）。
+- **无框架**：前台约 450 行原生 JS，负责时钟、搜索（名称/描述/分组/网址全匹配，`/` 聚焦，`Esc` 清空，`Enter` 打开第一个结果）、主题切换、点击上报（`sendBeacon`）、以及首页的卡片增删改。
+- **首页编辑**：卡片是服务端渲染的，改动走 `/api/admin/apps` 单条接口，服务端「读-改-写」KV 后把整份 `site` 返回，前端就地重渲染，不刷新页面。单条接口只带一个应用的数据，比整体 PUT 更安全，两个人同时改不同卡片不会互相覆盖。
+- **小正方形卡片**：`grid-template-columns: repeat(auto-fill, minmax(90px,1fr))` + `aspect-ratio:1/1`，卡片宽度自适应、始终是正方形，一屏能放 10 列；窄屏自动降到 4~6 列。
 - **直接打开网址**：搜索框输入 `github.com` 这类域名时，结果区顶部会出现「打开网址」直达卡片。
 - **鉴权**：HMAC-SHA256 签名的无状态 Cookie（`v1.<exp>.<sig>`），密钥由 `ADMIN_PASSWORD`（或单独的 `SESSION_SECRET`）派生，不落库；密码与签名比对都用定长逐字节比较。仍在用示例密码 `nav-admin` 时，登录页会给出警告。
 - **指标卡片**：应用数、分组数、PV 来自 KV；边缘节点取自 `request.cf.colo`；KV 读取耗时实测（`performance.now()`，亚毫秒精度）。
 - **安全头**：`nosniff`、`referrer-policy`、CSP（只允许 self + inline 样式脚本，图片放开任意 https 域名便于图标）。
 
-## 八、注意事项
+## 九、注意事项
 
 - **KV 是最终一致的**（同一键的写入跨区域生效约 60 秒）。后台改完立刻刷新其他区域的边缘节点可能看到旧内容，属正常现象；`/api/admin/site` 始终直读。
 - **计数是读-改-写**：高并发下 PV 可能有少量丢失。要精确计数请换 Durable Object（一个 DO 实例 + 一次写），其余代码不用动。

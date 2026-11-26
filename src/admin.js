@@ -316,7 +316,7 @@ export function renderAdmin({ site }) {
   </section>
 
   <section class="card">
-    <h2>应用列表 <small>拖动顺序请用 ↑ ↓</small></h2>
+    <h2>应用列表 <small>也可在首页点 ✎ 直接增删改；这里适合批量编辑与排序</small></h2>
     <div class="rhead"><span></span><span>名称</span><span>网址</span><span>分组</span><span>描述</span><span>图标</span><span>底色</span><span></span></div>
     <div class="rows" id="list"></div>
     <p class="hint" style="margin:12px 0 10px">图标支持 emoji（如 🚀）、首字母（如 S）或完整图片地址（https://…/logo.png）。</p>
