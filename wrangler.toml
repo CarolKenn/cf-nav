@@ -1,0 +1,13 @@
+name = "cf-nav"
+main = "src/index.js"
+compatibility_date = "2025-11-01"
+
+# ── Cloudflare KV ────────────────────────────────────────────────────────────
+# 这里故意不写 id：Wrangler 4.45+ 的自动资源供给（automatic provisioning）会在首次部署时
+# 自动创建并按名字复用同名 namespace，Cloudflare 的 Deploy 按钮也走同一套逻辑。
+# 想手动指定已有 namespace，再补一行：  id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+[[kv_namespaces]]
+binding = "NAV"
+
+[observability]
+enabled = true

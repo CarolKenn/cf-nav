@@ -1,0 +1,23 @@
+{
+  "name": "cf-nav",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sun-Panel 风格的网址导航，运行在 Cloudflare Workers，数据存放在 Cloudflare KV",
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy",
+    "preview": "node tools/build-preview.mjs",
+    "mock": "node tools/mock-server.mjs 8788"
+  },
+  "cloudflare": {
+    "bindings": {
+      "ADMIN_PASSWORD": {
+        "description": "后台登录密码（自定，建议 12 位以上）。部署时填写，之后可在 Worker 设置里修改。"
+      }
+    }
+  },
+  "devDependencies": {
+    "wrangler": "^4.45.0"
+  }
+}

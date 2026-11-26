@@ -1,0 +1,6 @@
+# 后台登录密码（dotenv 格式：KEY=VALUE，不要加空格和引号）
+# 一键部署时 Cloudflare 会读取本文件并让你填写；本地开发复制为 .dev.vars 后修改
+ADMIN_PASSWORD=nav-admin
+
+# 可选：会话签名密钥。不填则用上面的 ADMIN_PASSWORD 派生
+# SESSION_SECRET=change-me-to-a-long-random-string
