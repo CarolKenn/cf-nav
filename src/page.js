@@ -85,36 +85,42 @@ body{
 .bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#8ab4ff,#ff7ad1);
   transition:width .5s cubic-bezier(.22,1,.36,1)}
 
-/* 小正方形卡片：一屏能放下更多站点 */
-.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px}
-.app{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-  aspect-ratio:1/1;padding:10px 7px;border-radius:14px;text-decoration:none;color:inherit;font:inherit;
-  background:var(--card);border:1px solid var(--brd);cursor:pointer;
-  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-  transition:transform .18s cubic-bezier(.22,1,.36,1), background .18s, border-color .18s, box-shadow .18s}
-.app:hover{transform:translateY(-2px);background:var(--card-hover);border-color:var(--brd-hover);
-  box-shadow:0 14px 28px rgba(0,0,0,.26)}
-.app:active{transform:translateY(0) scale(.99)}
-.app .ico{width:36px;height:36px;flex:0 0 36px;border-radius:11px;display:grid;place-items:center;
-  font-size:16px;font-weight:800;letter-spacing:-.02em;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+/* 只有图标：没有卡片底框，图标本身就是一个正方形 */
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:14px 8px}
+.app{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;
+  padding:2px 0;background:none;border:0;text-decoration:none;color:inherit;font:inherit;cursor:pointer;
+  transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.app:active{transform:scale(.97)}
+.app .ico{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;
+  font-size:18px;font-weight:800;letter-spacing:-.02em;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), 0 3px 10px rgba(0,0,0,.22);
+  transition:transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s}
+.app:hover .ico{transform:translateY(-3px) scale(1.06);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.26), 0 10px 22px rgba(0,0,0,.42)}
+.app:active .ico{transform:translateY(-1px) scale(1.01)}
 .app .ico img{width:100%;height:100%;object-fit:cover;display:block}
 .app .tx{width:100%;min-width:0;text-align:center}
 .app .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-  font-size:11px;font-weight:600;line-height:1.25;word-break:break-word}
+  font-size:11px;font-weight:500;line-height:1.25;word-break:break-word;
+  color:rgba(255,255,255,.72);transition:color .18s}
+.app:hover .nm{color:#fff}
 .app .ds{display:none}
 
-/* 编辑态 */
-.app .ops{position:absolute;top:4px;right:4px;display:none}
+/* 编辑态：同样不加底框，只给图标描边提示可点 */
+.app .ops{position:absolute;top:-4px;right:calc(50% - 32px);display:none;z-index:2}
 .edit-on .app .ops{display:block}
-.app .ops button{width:18px;height:18px;padding:0;border-radius:6px;display:grid;place-items:center;
-  border:1px solid rgba(255,255,255,.18);background:rgba(10,12,26,.86);color:rgba(255,255,255,.78);
-  font:inherit;font-size:12px;line-height:1;cursor:pointer;transition:.15s}
+.app .ops button{width:18px;height:18px;padding:0;border-radius:50%;display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.24);background:rgba(8,10,22,.92);color:rgba(255,255,255,.82);
+  font:inherit;font-size:11px;line-height:1;cursor:pointer;transition:.15s;
+  box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .app .ops button:hover{background:#e11d48;border-color:#e11d48;color:#fff}
-.edit-on .app{border-color:rgba(255,255,255,.2)}
-.edit-on .app:hover{border-color:rgba(140,170,255,.7)}
-.app.add{border-style:dashed;color:var(--muted);background:rgba(255,255,255,.03)}
-.app.add:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.34)}
-.app.add .plus{font-size:20px;font-weight:300;line-height:1;height:36px;display:grid;place-items:center}
+.edit-on .app .ico{box-shadow:inset 0 0 0 1px rgba(255,255,255,.26), 0 0 0 2px rgba(120,150,255,0)}
+.edit-on .app:hover .ico{box-shadow:inset 0 0 0 1px rgba(255,255,255,.26), 0 0 0 2px rgba(140,170,255,.85)}
+.app.add{color:var(--muted)}
+.app.add .plus{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;
+  border:1px dashed rgba(255,255,255,.3);font-size:20px;font-weight:300;line-height:1;
+  color:rgba(255,255,255,.6);transition:.18s}
+.app.add:hover .plus{border-color:rgba(160,185,255,.8);color:#fff;background:rgba(255,255,255,.06)}
 
 .ebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;padding:9px 12px;border-radius:11px;
   font-size:12px;color:rgba(255,255,255,.78);
@@ -186,9 +192,11 @@ body{
 @media (max-width:600px){
   .wrap{padding:34px 16px 88px}
   .search kbd{display:none}
-  .apps{grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
-  .app{padding:8px 5px;border-radius:12px;gap:6px}
-  .app .ico{width:32px;height:32px;flex:0 0 32px;font-size:15px;border-radius:10px}
+  .apps{grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:12px 6px}
+  .app{gap:6px}
+  .app .ico{width:40px;height:40px;flex:0 0 40px;font-size:16px;border-radius:12px}
+  .app.add .plus{width:40px;height:40px;flex:0 0 40px;border-radius:12px}
+  .app .ops{right:calc(50% - 29px)}
   .app .nm{font-size:10.5px}
   .foot{text-align:center}
 }

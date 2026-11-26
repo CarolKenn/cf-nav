@@ -1,6 +1,6 @@
 # cf-nav · Cloudflare Worker 网址导航
 
-一个 Sun-Panel 风格的导航首页：渐变光斑背景、实时时钟、搜索过滤、指标卡片、**小正方形图标宫格**，外加一个密码保护的后台。
+一个 Sun-Panel 风格的导航首页：渐变光斑背景、实时时钟、搜索过滤、指标卡片、**无边框的纯图标宫格**，外加一个密码保护的后台。
 **代码跑在 Cloudflare Workers，数据存在 Cloudflare KV**，没有服务器、没有数据库、没有构建步骤。
 登录后可以**直接在首页改卡片**（新增 / 修改 / 删除），不用每次进后台。
 
@@ -151,7 +151,7 @@ npx wrangler kv key put --binding=NAV site --path=./site.json
 - **零构建**：CSS/JS 以字符串内联在 `page.js` / `admin.js` 里，`wrangler deploy` 只打一个 ESM 入口，不用 Vite / webpack。
 - **无框架**：前台约 450 行原生 JS，负责时钟、搜索（名称/描述/分组/网址全匹配，`/` 聚焦，`Esc` 清空，`Enter` 打开第一个结果）、主题切换、点击上报（`sendBeacon`）、以及首页的卡片增删改。
 - **首页编辑**：卡片是服务端渲染的，改动走 `/api/admin/apps` 单条接口，服务端「读-改-写」KV 后把整份 `site` 返回，前端就地重渲染，不刷新页面。单条接口只带一个应用的数据，比整体 PUT 更安全，两个人同时改不同卡片不会互相覆盖。
-- **小正方形卡片**：`grid-template-columns: repeat(auto-fill, minmax(90px,1fr))` + `aspect-ratio:1/1`，卡片宽度自适应、始终是正方形，一屏能放 10 列；窄屏自动降到 4~6 列。
+- **纯图标宫格**：卡片本身不画底框（无背景、无边框），只有图标是正方形（44×44），下面一行名称；`grid-template-columns: repeat(auto-fill, minmax(78px,1fr))`，桌面一屏 12 列，窄屏 5~6 列。悬停时图标上浮放大，不需要卡片底框也够明显。
 - **直接打开网址**：搜索框输入 `github.com` 这类域名时，结果区顶部会出现「打开网址」直达卡片。
 - **鉴权**：HMAC-SHA256 签名的无状态 Cookie（`v1.<exp>.<sig>`），密钥由 `ADMIN_PASSWORD`（或单独的 `SESSION_SECRET`）派生，不落库；密码与签名比对都用定长逐字节比较。仍在用示例密码 `nav-admin` 时，登录页会给出警告。
 - **指标卡片**：应用数、分组数、PV 来自 KV；边缘节点取自 `request.cf.colo`；KV 读取耗时实测（`performance.now()`，亚毫秒精度）。
